@@ -22,16 +22,17 @@ public final class ColorEngine {
 
         boolean higherIsBetter = mode.higherIsBetter();
 
-        int bestIdx = 0, worstIdx = 0;
-        for (int i = 1; i < scores.size(); i++) {
+        int bestIdx = -1, worstIdx = -1;
+        for (int i = 0; i < scores.size(); i++) {
             double v = scores.get(i);
-            double bestV = scores.get(bestIdx);
-            double worstV = scores.get(worstIdx);
-            if ((higherIsBetter ? v > bestV : v < bestV) && v > 0) bestIdx = i;
-            if ((higherIsBetter ? v < worstV : v > worstV) && v > 0) worstIdx = i;
+            if (v <= 0) continue;
+
+            if (bestIdx == -1 || (higherIsBetter ? v > scores.get(bestIdx) : v < scores.get(bestIdx))) bestIdx = i;
+            if (worstIdx == -1 || (higherIsBetter ? v < scores.get(worstIdx) : v > scores.get(worstIdx))) worstIdx = i;
+
         }
 
-        if (bestIdx == worstIdx) return Result.NONE;
+        if (bestIdx == -1 || bestIdx == worstIdx) return Result.NONE;
 
         return new Result(bestIdx, worstIdx);
     }
@@ -51,7 +52,7 @@ public final class ColorEngine {
         }
     }
 
-    /** Wraps already-formatted cell text in Clique markup per verdict. Neutral is untouched. */
+    // Wraps already-formatted cell text in Clique markup per verdict. Neutral is untouched.
     public static String applyMarkup(String cellText, Verdict verdict, RenderTheme renderTheme) {
         return switch (verdict) {
             case BEST -> renderTheme.best().on(cellText);
@@ -64,12 +65,15 @@ public final class ColorEngine {
 
 
     public static Verdict relativeVerdict(double rawValue, ScoreUnit unit, Result result, List<Double> scores) {
-        if (result.isNone()) return Verdict.NEUTRAL;
-
-        if (rawValue <= 0) return Verdict.NEUTRAL;
+        if (rawValue <= 0 || result.isNone()) return Verdict.NEUTRAL;
 
         double bestScore = scores.get(result.bestIndex());
         double worstScore = scores.get(result.worstIndex());
+
+        if (rawValue == bestScore) return Verdict.BEST;
+        if (rawValue == worstScore) return Verdict.WORST;
+
+
         boolean higherIsBetter = unit.kind() == ScoreUnit.Kind.THROUGHPUT;
 
         //Normalize direction
@@ -83,8 +87,17 @@ public final class ColorEngine {
 
         // Guard against the tolerance bands crossing when best/worst are close together.
         double mid = (bestScore + worstScore) / 2;
-        if (higherIsBetter) if (bestRange < worstRange) { bestRange = mid; worstRange = mid; }
-        else if (bestRange > worstRange) { bestRange = mid; worstRange = mid; }
+
+       // System.out.println("Raw value: %s, Best Range: %s, Worst Range: %s".formatted(rawValue, bestScore, worstScore));
+
+        boolean crossed = higherIsBetter
+                ? bestRange < worstRange
+                : bestRange > worstRange;
+
+        if (crossed) {
+            bestRange = mid;
+            worstRange = mid;
+        }
 
         boolean inBestZone = higherIsBetter ? rawValue >= bestRange : rawValue <= bestRange;
         boolean inWorstZone = higherIsBetter ? rawValue <= worstRange : rawValue >= worstRange;

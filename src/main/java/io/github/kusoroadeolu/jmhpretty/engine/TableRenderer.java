@@ -4,14 +4,11 @@ import io.github.kusoroadeolu.clique.Clique;
 import io.github.kusoroadeolu.clique.components.Table;
 import io.github.kusoroadeolu.clique.configuration.FrameAlign;
 import io.github.kusoroadeolu.clique.configuration.TableType;
-import io.github.kusoroadeolu.clique.style.Ink;
 import io.github.kusoroadeolu.jmhpretty.engine.ColorEngine.Result;
 import io.github.kusoroadeolu.jmhpretty.engine.ColorEngine.Verdict;
 import io.github.kusoroadeolu.jmhpretty.model.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 
 public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
@@ -19,7 +16,8 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
 
 
     private static final TableType DEFAULT_TABLE_TYPE = TableType.COMPACT;
-    private static final String N_A = dim("n/a");
+    private static final String N_A = dim("NaN");
+    private static final String AGGREGATE_ROLE_LABEL = "aggregate";
 
 
 
@@ -30,6 +28,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
                 renderTheme.worst().on("red"),
                 renderTheme.legend().on("slowest/worst")
         ));
+
         System.out.println();
 
         for (BenchmarkGroup group : run.groups()) {
@@ -73,11 +72,8 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
 
             if (showPercentiles) {
                 PercentileSet p = v.percentiles();
-                if (verbose) for (double value : p.toVerboseArray()) {
-                    Verdict verdict = relativeVerdict(value, v.scoreUnit(), relative, scores);
-                    row.add(formatCell(value, verdict));
-                }
-                else for (double value : p.toArray()){
+                double[] array = verbose ? p.toVerboseArray() : p.toArray();
+                 for (double value : array){
                     Verdict verdict = relativeVerdict(value, v.scoreUnit(), relative, scores);
                     row.add(formatCell(value, verdict));
                 }
@@ -90,72 +86,84 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
         renderFrame(group.benchmarkName(), table);
     }
 
-
     private void renderGroupBenchmark(BenchmarkGroup group) {
-        for (BenchmarkVariantResult variant : group.variants()) {
-            Mode mode = variant.mode();
-            boolean showPercentiles = mode.showsPercentiles();
+        Mode mode = group.variants().getFirst().mode();
+        boolean showPercentiles = mode.showsPercentiles();
+        List<String> headers = initHeaders(group.paramKeys(), showPercentiles, true);
+        Table table = Clique.table(DEFAULT_TABLE_TYPE)
+                .headers(headers);
+
+        Map<String, List<Double>> scoresByRole = new HashMap<>();
+
+        for (BenchmarkVariantResult variant: group.variants()) {
             List<GroupRole> roles = variant.roles();
+            for (GroupRole role : roles) {
+                double[] scores = verbose ? role.percentiles().toVerboseArray() : role.percentiles().toArray();
+                String name = role.name();
+                var ls = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
+                for (double d : scores) ls.add(d);
+            }
+        }
 
-            List<String> headers = initHeaders(List.of(), showPercentiles, true);
+        Map<String, Result> relativeResults = new HashMap<>();
+        for (Map.Entry<String, List<Double>> entry : scoresByRole.entrySet()) {
+            Result r = ColorEngine.relativeVerdicts(entry.getValue(), mode);
+            relativeResults.put(entry.getKey(), r);
+        }
 
-            List<Double> roleScores = roles.stream().map(GroupRole::score).toList();
-            Result relative = ColorEngine.relativeVerdicts(roleScores, mode);
 
-            Table table = Clique.table(DEFAULT_TABLE_TYPE)
-                    .headers(headers);
+        for (BenchmarkVariantResult variant : group.variants()) {
+            List<String> paramCells = new ArrayList<>();
+            for (String key : group.paramKeys()) {
+                paramCells.add(variant.params().getOrDefault(key, ""));
+            }
+
+            // Relative coloring scoped to this param combo's roles only.
+            List<GroupRole> roles = variant.roles();
 
             for (int i = 0; i < roles.size(); i++) {
                 GroupRole role = roles.get(i);
-                List<String> row = new ArrayList<>();
+                List<Double> roleScores = scoresByRole.get(role.name());
+                Result relative = relativeResults.get(role.name());
+                List<String> row = new ArrayList<>(paramCells);
                 row.add(role.name());
 
-                Verdict verdict = relative.verdictFor(i);
-                row.add(formatCell(role.score(), verdict));
+                row.add(formatCell(role.score(), relativeVerdict(role.score(), role.scoreUnit(), relative, roleScores)));
                 row.add(role.error() == null ? N_A : dim("± ") + formatTo3dp(role.error()));
 
-                if (showPercentiles) {
-                    PercentileSet p = role.percentiles();
-                    if (verbose) for (double value : p.toVerboseArray()) {
-                        Verdict lv = relativeVerdict(value, role.scoreUnit(), relative, roleScores);
-                        row.add(formatCell(value, lv));
-                    }
-                    else for (double value : p.toArray()){
-                        Verdict lv = relativeVerdict(value, role.scoreUnit(), relative, roleScores);
-                        row.add(formatCell(value, lv));
-                    }
-                }
+                if (showPercentiles) appendPercentileCells(row, role.percentiles(), role.scoreUnit(), relative, roleScores);
 
-                row.add(dim(role.scoreUnit().raw()));
+                row.add(role.scoreUnit().raw());
                 table.row(row);
             }
 
-            String title = group.benchmarkName();
-            if (!variant.params().isEmpty()) {
-                StringBuilder sb = new StringBuilder(title)
-                        .append(" (");
+            // Aggregate row: always last in its combo's block, never colored, though made dimmed and italicized to distinguish it from other rows.
+            List<String> aggRow = new ArrayList<>(paramCells.stream().map(TableRenderer::italicize).toList());
+            aggRow.add(italicize(AGGREGATE_ROLE_LABEL));
+            aggRow.add(italicize(formatTo3dp(variant.score())));
 
-                boolean first = true;
-                for (String key : group.paramKeys()) {
-                    if (!first) sb.append(", ");
-                    sb.append(key).append("=").append(variant.params().getOrDefault(key, ""));
-                    first = false;
-                }
-                sb.append(")");
-                title = sb.toString();
-            }
+            String errorString = variant.error() == null ? italicize(N_A) : italicize("± ") + italicize(formatTo3dp(variant.error()));
+            aggRow.add(errorString);
 
-            String aggregateLine = renderTheme.aggregate().on(
-                    "aggregate: " + formatTo3dp(variant.score())
-                            + (variant.error() == null ? "" : dim(" ± ") + renderTheme.aggregate().on(formatTo3dp(variant.error())))
-            );
-
-            renderFrame(title, table);
-
-            Clique.parser().print(aggregateLine);
-            System.out.println();
+            if (showPercentiles) appendPercentileCellsAggregate(aggRow, variant.percentiles());
+            aggRow.add(italicize(roles.getFirst().scoreUnit().raw()));
+            table.row(aggRow);
         }
+
+        renderFrame(group.benchmarkName(), table);
     }
+
+    private void appendPercentileCells(List<String> row, PercentileSet p, ScoreUnit unit ,Result result, List<Double> scores) {
+        double[] array = verbose ? p.toVerboseArray() : p.toArray();
+        for (double pv : array) row.add(formatCell(pv, relativeVerdict(pv, unit, result, scores)));
+    }
+
+    // Same as appendPercentileCells but with no absolute-threshold coloring. Used for aggregate rows.
+    private void appendPercentileCellsAggregate(List<String> row, PercentileSet p) {
+        double[] array = verbose ? p.toVerboseArray() : p.toArray();
+        for (double pv : array) row.add(italicize(formatTo3dp(pv)));
+    }
+
 
     void renderFrame(String title, Table table) {
         Clique.frame()
@@ -164,8 +172,8 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
                 .render();
     }
 
-    // Formatting helpers
 
+    // Formatting helpers
     String formatTo3dp(double rawValue) {
         return String.format(Locale.ROOT, "%.3f", rawValue);
     }
@@ -186,7 +194,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
 
         if (showPercentiles) {
             List<String> percentileList;
-            if (verbose) percentileList = List.of("p00", "p50", "p90", "p95", "p99", "p99.9", "p99.99", "p99.999", "p99.9999", "p100");
+            if (verbose) percentileList = List.of("p00", "p50", "p90", "p95", "p99", "p99.9", "p99.99", "p99.999", "p99.9999", "max");
             else percentileList = List.of("p50", "p99", "max");
 
             List<String> colored = applyHeader(percentileList);
@@ -204,5 +212,8 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
         return RenderTheme.DIM.on(s);
     }
 
+    static String italicize(String s) {
+        return RenderTheme.DIM.italic().on(s);
+    }
 
 }

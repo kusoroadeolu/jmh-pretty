@@ -1,9 +1,5 @@
 package io.github.kusoroadeolu.jmhpretty;
 
-import io.github.kusoroadeolu.clique.Clique;
-import io.github.kusoroadeolu.clique.configuration.StyleContext;
-import io.github.kusoroadeolu.clique.style.Ink;
-import io.github.kusoroadeolu.clique.themes.CatppuccinMochaTheme;
 import io.github.kusoroadeolu.jmhpretty.engine.TableRenderer;
 import io.github.kusoroadeolu.jmhpretty.mapper.RawResultMapper;
 import io.github.kusoroadeolu.jmhpretty.model.ParsedRun;
@@ -13,8 +9,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Objects;
-
-import static io.github.kusoroadeolu.jmhpretty.model.RenderTheme.defaultTheme;
 
 public class JmhPrettyPrinter {
     private final TableRenderer renderer;
@@ -60,7 +54,7 @@ public class JmhPrettyPrinter {
         }
 
         public JmhPrettyPrinter build() {
-            RenderTheme theme = renderTheme == null ? defaultTheme() : renderTheme;
+            RenderTheme theme = renderTheme == null ? RenderTheme.DEFAULT : renderTheme;
             return new JmhPrettyPrinter(new TableRenderer(verbose, theme));
         }
 

@@ -1,8 +1,7 @@
 package io.github.kusoroadeolu.jmhpretty.model;
 
-import io.github.kusoroadeolu.clique.configuration.StyleContext;
+import io.github.kusoroadeolu.clique.Clique;
 import io.github.kusoroadeolu.clique.style.Ink;
-import io.github.kusoroadeolu.clique.themes.CatppuccinMochaTheme;
 
 public record RenderTheme(
         Ink best, Ink worst, Ink relativeBest,
@@ -14,7 +13,8 @@ public record RenderTheme(
 
     public static final RenderTheme DEFAULT = defaultTheme();
 
-    public static RenderTheme defaultTheme() {
+    private static RenderTheme defaultTheme() {
+        Clique.registerTheme("catppuccin-mocha");
         Ink base = BASE;
         Ink bold = base.bold();
         return new RenderTheme(

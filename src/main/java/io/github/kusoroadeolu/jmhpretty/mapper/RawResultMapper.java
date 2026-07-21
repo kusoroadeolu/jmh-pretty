@@ -30,7 +30,7 @@ public final class RawResultMapper {
     private static final String SCORE = "score";
     private static final String SCORE_ERROR = "scoreError";
     private static final String SCORE_UNIT = "scoreUnit";
-    private static final String SCORE_PERCENTILE = "scorePercentiles";
+    private static final String SCORE_PERCENTILES = "scorePercentiles";
     private static final String SECONDARY_METRICS = "secondaryMetrics";
 
     private RawResultMapper() {}
@@ -69,7 +69,7 @@ public final class RawResultMapper {
             double score = requiredDouble(primary, SCORE);
             Double error = optionalDouble(primary, SCORE_ERROR);
             ScoreUnit scoreUnit = ScoreUnit.parse(requiredString(primary, SCORE_UNIT));
-            PercentileSet percentiles = parsePercentiles(primary.getAsJsonObject(SCORE_PERCENTILE), score);
+            PercentileSet percentiles = parsePercentiles(primary.getAsJsonObject(SCORE_PERCENTILES), score);
 
             List<GroupRole> roles = parseSecondaryMetrics(obj.getAsJsonObject(SECONDARY_METRICS));
 
@@ -102,18 +102,25 @@ public final class RawResultMapper {
         return out;
     }
 
+    private static boolean isRedundantPercentileDump(String key) {
+        if (key.contains(":p")) return true;
+        return key.matches("p\\d+\\.\\d+");
+    }
+
     private static List<GroupRole> parseSecondaryMetrics(JsonObject secondaryObj) {
-        if (secondaryObj == null || secondaryObj.entrySet().isEmpty()) return List.of();
-
-
+        if (secondaryObj == null || secondaryObj.entrySet().isEmpty()) {
+            return List.of();
+        }
         List<GroupRole> roles = new ArrayList<>();
         for (Map.Entry<String, JsonElement> e : secondaryObj.entrySet()) {
             String roleName = e.getKey();
+            if (isRedundantPercentileDump(roleName)) continue;
+
             JsonObject roleObj = e.getValue().getAsJsonObject();
             double score = requiredDouble(roleObj, SCORE);
             Double error = optionalDouble(roleObj, SCORE_ERROR);
             ScoreUnit scoreUnit = ScoreUnit.parse(requiredString(roleObj, SCORE_UNIT));
-            PercentileSet percentiles = parsePercentiles(roleObj.getAsJsonObject(SCORE_PERCENTILE), score);
+            PercentileSet percentiles = parsePercentiles(roleObj.getAsJsonObject(SCORE_PERCENTILES), score);
             roles.add(new GroupRole(roleName, score, error, scoreUnit, percentiles));
         }
         return roles;
@@ -155,13 +162,11 @@ public final class RawResultMapper {
 
     private static Double optionalDouble(JsonObject obj, String field) {
         JsonElement el = obj.get(field);
-        if (el == null || el.isJsonNull()) {
-            return null;
-        }
+        if (el == null || el.isJsonNull()) return null;
+
         String s = el.getAsString();
-        if ("NaN".equalsIgnoreCase(s)) {
-            return null;
-        }
+        if ("NaN".equalsIgnoreCase(s)) return null;
+
         try {
             return el.getAsDouble();
         } catch (NumberFormatException ignored) {
