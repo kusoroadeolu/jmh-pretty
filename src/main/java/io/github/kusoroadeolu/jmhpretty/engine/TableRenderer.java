@@ -93,17 +93,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
         Table table = Clique.table(DEFAULT_TABLE_TYPE)
                 .headers(headers);
 
-        Map<String, List<Double>> scoresByRole = new HashMap<>();
-
-        for (BenchmarkVariantResult variant: group.variants()) {
-            List<GroupRole> roles = variant.roles();
-            for (GroupRole role : roles) {
-                double[] scores = verbose ? role.percentiles().toVerboseArray() : role.percentiles().toArray();
-                String name = role.name();
-                var ls = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
-                for (double d : scores) ls.add(d);
-            }
-        }
+        Map<String, List<Double>> scoresByRole = groupScoresByRole(mode, group);
 
         Map<String, Result> relativeResults = new HashMap<>();
         for (Map.Entry<String, List<Double>> entry : scoresByRole.entrySet()) {
@@ -151,6 +141,32 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
         }
 
         renderFrame(group.benchmarkName(), table);
+    }
+
+    private Map<String, List<Double>> groupScoresByRole(Mode mode, BenchmarkGroup group) {
+        Map<String, List<Double>> scoresByRole = new HashMap<>();
+        if (mode.higherIsBetter()) {
+            for (BenchmarkVariantResult variant: group.variants()) {
+                List<GroupRole> roles = variant.roles();
+                for (GroupRole role : roles) {
+                    String name = role.name();
+                    var ls = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
+                    ls.add(role.score());
+                }
+            }
+        }else {
+            for (BenchmarkVariantResult variant: group.variants()) {
+                List<GroupRole> roles = variant.roles();
+                for (GroupRole role : roles) {
+                    double[] scores = verbose ? role.percentiles().toVerboseArray() : role.percentiles().toArray();
+                    String name = role.name();
+                    var ls = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
+                    for (double d : scores) ls.add(d);
+                }
+            }
+        }
+
+        return scoresByRole;
     }
 
     private void appendPercentileCells(List<String> row, PercentileSet p, ScoreUnit unit ,Result result, List<Double> scores) {
