@@ -14,14 +14,19 @@ public record RenderTheme(
     public static final RenderTheme DEFAULT = defaultTheme();
 
     private static RenderTheme defaultTheme() {
-        Clique.registerTheme("catppuccin-mocha");
+        Clique.registerTheme("nord");
         Ink base = BASE;
         Ink bold = base.bold();
-        return new RenderTheme(
-                base.of("ctp_green"), base.of("ctp_red"), base.of("ctp_teal"),
-                base.of("ctp_maroon"), bold.of("ctp_mauve"), bold.of("ctp_blue"),
-                base.of("ctp_subtext1").italic(), base.of("ctp_sky")
-        );
 
+        return new RenderTheme(
+                bold.of("nord_green"),
+                bold.of("nord_red"),
+                base,
+                base,
+                bold.of("nord_frost1"),
+                bold.of("nord_snow"),
+                base.of("nord_polar3").italic(),
+                base.of("nord_frost0")
+        );
     }
 }
