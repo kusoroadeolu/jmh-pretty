@@ -4,7 +4,6 @@ import io.github.kusoroadeolu.jmhpretty.model.Mode;
 import io.github.kusoroadeolu.jmhpretty.model.RenderTheme;
 import io.github.kusoroadeolu.jmhpretty.model.ScoreUnit;
 
-import java.io.File;
 import java.util.List;
 
 

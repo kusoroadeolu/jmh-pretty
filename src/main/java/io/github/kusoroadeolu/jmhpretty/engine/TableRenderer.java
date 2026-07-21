@@ -111,8 +111,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
             // Relative coloring scoped to this param combo's roles only.
             List<GroupRole> roles = variant.roles();
 
-            for (int i = 0; i < roles.size(); i++) {
-                GroupRole role = roles.get(i);
+            for (GroupRole role : roles) {
                 List<Double> roleScores = scoresByRole.get(role.name());
                 Result relative = relativeResults.get(role.name());
                 List<String> row = new ArrayList<>(paramCells);
@@ -121,7 +120,8 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
                 row.add(formatCell(role.score(), relativeVerdict(role.score(), role.scoreUnit(), relative, roleScores)));
                 row.add(role.error() == null ? N_A : dim("± ") + formatTo3dp(role.error()));
 
-                if (showPercentiles) appendPercentileCells(row, role.percentiles(), role.scoreUnit(), relative, roleScores);
+                if (showPercentiles)
+                    appendPercentileCells(row, role.percentiles(), role.scoreUnit(), relative, roleScores);
 
                 row.add(role.scoreUnit().raw());
                 table.row(row);
