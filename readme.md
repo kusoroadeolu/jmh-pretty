@@ -22,7 +22,7 @@ A CLI tool that turns raw [JMH](https://openjdk.org/projects/code-tools/jmh/) `-
 
 ## Installation
 
-> This assumes a Maven build (`mvn` on the classpath). Adjust if your project actually uses Gradle.
+> Maven is required
 
 ```bash
 git clone https://github.com/kusoroadeolu/jmhpretty.git
@@ -89,4 +89,4 @@ It deliberately ignores: run metadata (JVM, JDK/VM version, JMH version, warmup/
 
 ## License
 
-*(Add your license here, e.g. MIT, Apache-2.0.)*
+MIT
