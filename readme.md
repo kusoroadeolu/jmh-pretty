@@ -30,7 +30,7 @@ cd jmhpretty
 mvn clean package
 ```
 
-This produces a runnable jar (adjust the path/name below to match your actual `pom.xml` output, e.g. if you're using the shade or assembly plugin).
+This produces a runnable jar.
 
 ## Usage
 
