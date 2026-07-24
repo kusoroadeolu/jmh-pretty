@@ -20,4 +20,8 @@ public record PercentileSet(
         return new double[]{p99(), p99_9() ,p99_99(), p100()};
     }
 
+    public static void main(String[] args) {
+        System.out.println(Character.toString(65));
+    }
+
 }
