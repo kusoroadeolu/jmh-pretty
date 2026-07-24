@@ -20,7 +20,8 @@ public final class MarkdownExporter {
         if (!Files.isRegularFile(p)) throw new RuntimeException("Provided path %s is not a file path!".formatted(mdPath));
 
         String output = builder.buildOutput(run, TableType.MARKDOWN, false);
-        String cleaned = Clique.parser().getOriginalString(output);//remove reset ansi used in building frames
+        String cleaned = System.lineSeparator() + System.lineSeparator() +
+                Clique.parser().getOriginalString(output);//remove reset ansi used in building frames
 
         try {
             Files.writeString(p, cleaned, StandardOpenOption.APPEND);

@@ -17,13 +17,14 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
     private static final String AGGREGATE_ROLE_LABEL = "aggregate";
 
 
-    public String  buildOutput(ParsedRun run, TableType tableType, boolean withFrame) {
+    public String buildOutput(ParsedRun run, TableType tableType, boolean withFrame) {
         StringBuilder sb = new StringBuilder();
         sb.append("%s = %s, %s = %s".formatted(renderTheme.best().on("green"),
                 renderTheme.legend().on("fastest/best"),
                 renderTheme.worst().on("red"),
                 renderTheme.legend().on("slowest/worst")
-        )).append(System.lineSeparator());
+        )).append(System.lineSeparator()) .append(System.lineSeparator()); // blank line before the table
+
 
         for (BenchmarkGroup group : run.groups()) {
             Table table;

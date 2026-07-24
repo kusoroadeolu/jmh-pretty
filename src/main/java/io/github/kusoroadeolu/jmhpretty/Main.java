@@ -22,6 +22,5 @@ public class Main {
 
         if (verbose) JmhPrettyPrinter.builder().verbose().build().print(p.toString());
         else JmhPrettyPrinter.builder().build().print(p.toString());
-
     }
 }
