@@ -1,20 +1,18 @@
 package io.github.kusoroadeolu.jmhpretty;
 
-import io.github.kusoroadeolu.jmhpretty.engine.TableRenderer;
-import io.github.kusoroadeolu.jmhpretty.mapper.RawResultMapper;
+import io.github.kusoroadeolu.clique.configuration.TableType;
+import io.github.kusoroadeolu.jmhpretty.engine.OutputBuilder;
 import io.github.kusoroadeolu.jmhpretty.model.ParsedRun;
 import io.github.kusoroadeolu.jmhpretty.model.RenderTheme;
+import io.github.kusoroadeolu.jmhpretty.utils.FileUtils;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
 import java.util.Objects;
 
 public class JmhPrettyPrinter {
-    private final TableRenderer renderer;
+    private final OutputBuilder builder;
 
-    private JmhPrettyPrinter(TableRenderer renderer) {
-        this.renderer = renderer;
+    private JmhPrettyPrinter(OutputBuilder builder) {
+        this.builder = builder;
     }
 
     public static Builder builder() {
@@ -23,19 +21,10 @@ public class JmhPrettyPrinter {
 
     public void print(String filePath) {
         Objects.requireNonNull(filePath);
-        try (Reader reader = new FileReader(filePath)) {
-            ParsedRun run = RawResultMapper.parse(reader);
-            clearScreen();
-            renderer.render(run);
-        } catch (IOException e) {
-            System.err.println("Failed to read file: %s. Error: %s".formatted(filePath, e.getMessage()));
-            System.exit(1);
-        } catch (IllegalArgumentException e) {
-            System.err.println("Failed to parse JMH JSON: " + e.getMessage());
-            System.exit(1);
-        }
+        ParsedRun run = FileUtils.readJmhJson(filePath);
+        clearScreen();
+        System.out.print(builder.buildOutput(run, TableType.COMPACT, true));
     }
-
 
     public static class Builder {
         private boolean verbose = false;
@@ -55,7 +44,7 @@ public class JmhPrettyPrinter {
 
         public JmhPrettyPrinter build() {
             RenderTheme theme = renderTheme == null ? RenderTheme.DEFAULT : renderTheme;
-            return new JmhPrettyPrinter(new TableRenderer(verbose, theme));
+            return new JmhPrettyPrinter(new OutputBuilder(verbose, theme));
         }
 
 

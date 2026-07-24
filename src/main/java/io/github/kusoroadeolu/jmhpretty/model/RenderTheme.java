@@ -12,6 +12,24 @@ public record RenderTheme(
     public static final Ink DIM = BASE.dim();
 
     public static final RenderTheme DEFAULT = defaultTheme();
+    public static final RenderTheme NONE = noneTheme();
+
+    private static RenderTheme noneTheme() {
+
+        Ink base = BASE;
+
+        return new RenderTheme(
+                base,
+                base,
+                base,
+                base,
+                base,
+                base,
+                base,
+                base
+        );
+    }
+
 
     private static RenderTheme defaultTheme() {
         Clique.registerTheme("nord");

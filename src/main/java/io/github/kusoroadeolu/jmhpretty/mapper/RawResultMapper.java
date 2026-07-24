@@ -12,11 +12,11 @@ import java.util.*;
 
 /**
  * Parses JMH's `-rf json` output into the lean internal model.
- *
+ * <p>
  * Uses Gson's tree API (JsonObject/JsonArray) rather than fixed-shape POJOs,
  * since JMH JSON has some optional/nullable fields (error, params, secondaryMetrics)
  * that are easier to handle defensively as a tree.
- *
+ * <p>
  * Deliberately does NOT parse: RunMetadata fields (jvm, jdkVersion, vmVersion,
  * jmhVersion, warmup/measurement iteration counts, jvmArgs), rawData, rawDataHistogram,
  * scoreConfidence. secondaryMetrics IS parsed, into GroupRole, for @Group benchmarks.

@@ -11,40 +11,39 @@ import io.github.kusoroadeolu.jmhpretty.model.*;
 import java.util.*;
 
 
-public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
+public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
 
-
-
-    private static final TableType DEFAULT_TABLE_TYPE = TableType.COMPACT;
     private static final String N_A = dim("NaN");
     private static final String AGGREGATE_ROLE_LABEL = "aggregate";
 
 
-
-    public void render(ParsedRun run) {
-
-        Clique.parser().print("%s = %s, %s = %s".formatted(renderTheme.best().on("green"),
+    public String  buildOutput(ParsedRun run, TableType tableType, boolean withFrame) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("%s = %s, %s = %s".formatted(renderTheme.best().on("green"),
                 renderTheme.legend().on("fastest/best"),
                 renderTheme.worst().on("red"),
                 renderTheme.legend().on("slowest/worst")
-        ));
-
-        System.out.println();
+        )).append(System.lineSeparator());
 
         for (BenchmarkGroup group : run.groups()) {
-            if (isGroupBenchmark(group)) renderGroupBenchmark(group);
-            else renderNormalGroup(group);
-
-            System.out.println();
+            Table table;
+            if (isGroupBenchmark(group)) table = buildGroupBenchmark(group, tableType);
+            else table = buildNormalGroup(group, tableType);
+            if (withFrame) sb.append(buildFrame(group.benchmarkName(), table));
+            else sb.append(table.get());
+            sb.append(System.lineSeparator());
         }
+
+        return sb.toString();
     }
+
 
     private boolean isGroupBenchmark(BenchmarkGroup group) {
         return group.variants().stream().anyMatch(BenchmarkVariantResult::isGroupBenchmark);
     }
 
     // Normal benchmarks (no @Group)
-    private void renderNormalGroup(BenchmarkGroup group) {
+    private Table buildNormalGroup(BenchmarkGroup group, TableType tableType) {
         List<BenchmarkVariantResult> variants = group.variants();
         Mode mode = variants.getFirst().mode();
         boolean showPercentiles = mode.showsPercentiles();
@@ -55,7 +54,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
         List<Double> scores = variants.stream().map(BenchmarkVariantResult::score).toList();
         Result relative = ColorEngine.relativeVerdicts(scores, mode);
 
-        Table table = Clique.table(DEFAULT_TABLE_TYPE)
+        Table table = Clique.table(tableType)
                 .headers(headers);
 
         for (int i = 0; i < variants.size(); i++) {
@@ -83,14 +82,14 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
             table.row(row);
         }
 
-        renderFrame(group.benchmarkName(), table);
+        return table;
     }
 
-    private void renderGroupBenchmark(BenchmarkGroup group) {
+    private Table buildGroupBenchmark(BenchmarkGroup group, TableType tableType) {
         Mode mode = group.variants().getFirst().mode();
         boolean showPercentiles = mode.showsPercentiles();
         List<String> headers = initHeaders(group.paramKeys(), showPercentiles, true);
-        Table table = Clique.table(DEFAULT_TABLE_TYPE)
+        Table table = Clique.table(tableType)
                 .headers(headers);
 
         Map<String, List<Double>> scoresByRole = groupScoresByRole(mode, group);
@@ -127,8 +126,8 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
                 table.row(row);
             }
 
-            // Aggregate row: always last in its combo's block, never colored, though made dimmed and italicized to distinguish it from other rows.
-            List<String> aggRow = new ArrayList<>(paramCells.stream().map(TableRenderer::italicize).toList());
+            // Aggregate row: always last in its combo's block, never colored, though made dim and italicized to distinguish it from other rows.
+            List<String> aggRow = new ArrayList<>(paramCells.stream().map(OutputBuilder::italicize).toList());
             aggRow.add(italicize(AGGREGATE_ROLE_LABEL));
             aggRow.add(italicize(formatTo3dp(variant.score())));
 
@@ -140,7 +139,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
             table.row(aggRow);
         }
 
-        renderFrame(group.benchmarkName(), table);
+        return table;
     }
 
     private Map<String, List<Double>> groupScoresByRole(Mode mode, BenchmarkGroup group) {
@@ -181,11 +180,11 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
     }
 
 
-    void renderFrame(String title, Table table) {
-        Clique.frame()
+    String buildFrame(String title, Table table) {
+        return Clique.frame()
                 .title(renderTheme.title().on(title))
                 .nest(table, FrameAlign.LEFT)
-                .render();
+                .get();
     }
 
 

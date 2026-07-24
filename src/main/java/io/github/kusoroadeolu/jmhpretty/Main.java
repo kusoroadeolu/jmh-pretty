@@ -1,5 +1,7 @@
 package io.github.kusoroadeolu.jmhpretty;
 
+import io.github.kusoroadeolu.jmhpretty.utils.FileUtils;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -14,12 +16,12 @@ public class Main {
 
         String filePath = args[0];
         //get file path, if the filepath isn't a full path, take the current path and add it to the given path
-        Path p = Path.of(filePath).normalize();
-        if (!p.isAbsolute()) p = Path.of(".", filePath).toAbsolutePath().normalize();
+        Path p = FileUtils.toPath(filePath);
 
         if (Files.isDirectory(p)) throw new IllegalArgumentException("Provided path is not a file path!");
 
         if (verbose) JmhPrettyPrinter.builder().verbose().build().print(p.toString());
         else JmhPrettyPrinter.builder().build().print(p.toString());
+
     }
 }
