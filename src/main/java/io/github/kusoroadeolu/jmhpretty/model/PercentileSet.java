@@ -16,8 +16,8 @@ public record PercentileSet(
         };
     }
 
-    public double[] toArray() {
-        return new double[]{p50(), p99(), p100()};
+    public double[] toDefaultArray() {
+        return new double[]{p99(), p99_9() ,p99_99(), p100()};
     }
 
 }

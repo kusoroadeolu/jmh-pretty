@@ -72,7 +72,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
 
             if (showPercentiles) {
                 PercentileSet p = v.percentiles();
-                double[] array = verbose ? p.toVerboseArray() : p.toArray();
+                double[] array = verbose ? p.toVerboseArray() : p.toDefaultArray();
                  for (double value : array){
                     Verdict verdict = relativeVerdict(value, v.scoreUnit(), relative, scores);
                     row.add(formatCell(value, verdict));
@@ -158,7 +158,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
             for (BenchmarkVariantResult variant: group.variants()) {
                 List<GroupRole> roles = variant.roles();
                 for (GroupRole role : roles) {
-                    double[] scores = verbose ? role.percentiles().toVerboseArray() : role.percentiles().toArray();
+                    double[] scores = verbose ? role.percentiles().toVerboseArray() : role.percentiles().toDefaultArray();
                     String name = role.name();
                     var ls = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
                     for (double d : scores) ls.add(d);
@@ -170,13 +170,13 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
     }
 
     private void appendPercentileCells(List<String> row, PercentileSet p, ScoreUnit unit ,Result result, List<Double> scores) {
-        double[] array = verbose ? p.toVerboseArray() : p.toArray();
+        double[] array = verbose ? p.toVerboseArray() : p.toDefaultArray();
         for (double pv : array) row.add(formatCell(pv, relativeVerdict(pv, unit, result, scores)));
     }
 
     // Same as appendPercentileCells but with no absolute-threshold coloring. Used for aggregate rows.
     private void appendPercentileCellsAggregate(List<String> row, PercentileSet p) {
-        double[] array = verbose ? p.toVerboseArray() : p.toArray();
+        double[] array = verbose ? p.toVerboseArray() : p.toDefaultArray();
         for (double pv : array) row.add(italicize(formatTo3dp(pv)));
     }
 
@@ -211,7 +211,7 @@ public record TableRenderer(boolean verbose, RenderTheme renderTheme) {
         if (showPercentiles) {
             List<String> percentileList;
             if (verbose) percentileList = List.of("p00", "p50", "p90", "p95", "p99", "p99.9", "p99.99", "p99.999", "p99.9999", "max");
-            else percentileList = List.of("p50", "p99", "max");
+            else percentileList = List.of("p99", "p99.9", "p99.99", "max");
 
             List<String> colored = applyHeader(percentileList);
             headers.addAll(colored);
