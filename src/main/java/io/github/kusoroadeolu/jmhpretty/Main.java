@@ -16,11 +16,8 @@ public class Main {
 
         String filePath = args[0];
 
-        if (filePath == null || filePath.isBlank()) {
-            printUsageAndExit();
-        }
+        if (filePath == null || filePath.isBlank()) printUsageAndExit();
 
-        //get file path, if the filepath isn't a full path, take the current path and add it to the given path
         Path p = FileUtils.toPath(filePath);
 
         if (!Files.isRegularFile(p)) {

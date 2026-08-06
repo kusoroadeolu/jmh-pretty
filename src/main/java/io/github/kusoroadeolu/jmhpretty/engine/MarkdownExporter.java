@@ -14,7 +14,7 @@ import java.util.Objects;
 //TODO: Still experimental, working on making the api more cohesive
 public final class MarkdownExporter {
 
-    public static void exportToFile(String jsonPath, String mdPath, OutputBuilder builder) {
+    public static void exportToFile(String jsonPath, String mdPath, ResultRenderer builder) {
         ParsedRun run = FileUtils.readJmhJson(Objects.requireNonNull(jsonPath));
         Path p = FileUtils.toPath(mdPath);
 

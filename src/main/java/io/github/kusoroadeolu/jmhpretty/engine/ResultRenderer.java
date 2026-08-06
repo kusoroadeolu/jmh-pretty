@@ -11,14 +11,20 @@ import io.github.kusoroadeolu.jmhpretty.model.*;
 import java.util.*;
 
 
-public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
+public record ResultRenderer(boolean verbose, RenderTheme renderTheme) {
 
     private static final String N_A = dim("NaN");
     private static final String AGGREGATE_ROLE_LABEL = "aggregate";
+    private static final String FOOTER = buildFooter();
 
+    public void renderOutput(ParsedRun run, TableType tableType, boolean appendFrame) {
+        System.out.print(buildOutput(run, tableType, appendFrame));
+        System.out.println(FOOTER);
+    }
 
     public String buildOutput(ParsedRun run, TableType tableType, boolean appendFrame) {
         StringBuilder sb = new StringBuilder();
+
         sb.append(
                 "%s = %s, %s = %s".formatted(
                 renderTheme.best().on("green"),
@@ -56,7 +62,7 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
 
         List<String> headers = initHeaders(group.paramKeys(), showPercentiles, false);
 
-        // relative coloring pass over scores (mode-aware), only meaningful with >= 2 variants
+        // relative coloring pass over scores (mode-aware)
         List<Double> scores;
 
         if (higherIsBetter) scores = variants.stream().map(BenchmarkVariantResult::score).toList();
@@ -145,7 +151,7 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
             }
 
             // Aggregate row: always last in its combo's block, never colored, though made dim and italicized to distinguish it from other rows.
-            List<String> aggRow = new ArrayList<>(paramCells.stream().map(OutputBuilder::italicize).toList());
+            List<String> aggRow = new ArrayList<>(paramCells.stream().map(ResultRenderer::italicize).toList());
             aggRow.add(italicize(AGGREGATE_ROLE_LABEL));
             aggRow.add(italicize(formatTo3dp(variant.score())));
 
@@ -167,18 +173,18 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
                 List<GroupRole> roles = variant.roles();
                 for (GroupRole role : roles) {
                     String name = role.name();
-                    var ls = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
-                    ls.add(role.score());
+                    var scores = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
+                    scores.add(role.score());
                 }
             }
         }else {
             for (BenchmarkVariantResult variant: group.variants()) {
                 List<GroupRole> roles = variant.roles();
                 for (GroupRole role : roles) {
-                    double[] scores = verbose ? role.percentiles().toVerboseArray() : role.percentiles().toDefaultArray();
+                    double[] percentileScores = verbose ? role.percentiles().toVerboseArray() : role.percentiles().toDefaultArray();
                     String name = role.name();
-                    var ls = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
-                    for (double d : scores) ls.add(d);
+                    var scores = scoresByRole.computeIfAbsent(name, (s) -> new ArrayList<>());
+                    for (double d : percentileScores) scores.add(d);
                 }
             }
         }
@@ -220,12 +226,12 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
     }
 
     List<String> initHeaders(List<String> paramKeys, boolean showPercentiles, boolean isGroup) {
-        List<String> headers = new ArrayList<>(applyHeader(paramKeys));
+        List<String> headers = new ArrayList<>(appendHeader(paramKeys));
         if (isGroup) headers.add(renderTheme.header().on("Role"));
         headers.add(renderTheme.header().on("Score"));
         headers.add(renderTheme.header().on("Error"));
 
-        if (showPercentiles) headers.addAll(applyHeader(createPercentileHeaders(verbose)));
+        if (showPercentiles) headers.addAll(appendHeader(createPercentileHeaders(verbose)));
 
         headers.add(renderTheme.header().on("Unit"));
         return headers;
@@ -238,7 +244,7 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
         return percentileList;
     }
 
-    List<String> applyHeader(List<String> list) {
+    List<String> appendHeader(List<String> list) {
        return list.stream().map(s -> renderTheme.header().on(Character.toString(s.charAt(0)).toUpperCase(Locale.ROOT) + s.substring(1))).toList();
     }
 
@@ -250,4 +256,9 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
         return RenderTheme.DIM.italic().on(s);
     }
 
+    //TODO open issue for clique to add config options (for clique) to align divider titles (LEFT, RIGHT, CENTER) similar to frame
+    //Though for now this looks alright
+    static String buildFooter() {
+       return Clique.divider(30).title("[blue]Generated with JMHPretty").get();
+    }
 }

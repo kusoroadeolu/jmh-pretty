@@ -1,7 +1,7 @@
 package io.github.kusoroadeolu.jmhpretty;
 
 import io.github.kusoroadeolu.clique.configuration.TableType;
-import io.github.kusoroadeolu.jmhpretty.engine.OutputBuilder;
+import io.github.kusoroadeolu.jmhpretty.engine.ResultRenderer;
 import io.github.kusoroadeolu.jmhpretty.model.ParsedRun;
 import io.github.kusoroadeolu.jmhpretty.model.RenderTheme;
 import io.github.kusoroadeolu.jmhpretty.utils.FileUtils;
@@ -9,9 +9,9 @@ import io.github.kusoroadeolu.jmhpretty.utils.FileUtils;
 import java.util.Objects;
 
 public class JmhPrettyPrinter {
-    private final OutputBuilder builder;
+    private final ResultRenderer builder;
 
-    private JmhPrettyPrinter(OutputBuilder builder) {
+    private JmhPrettyPrinter(ResultRenderer builder) {
         this.builder = builder;
     }
 
@@ -23,7 +23,7 @@ public class JmhPrettyPrinter {
         Objects.requireNonNull(filePath);
         ParsedRun run = FileUtils.readJmhJson(filePath);
         clearScreen();
-        System.out.print(builder.buildOutput(run, TableType.COMPACT, true));
+        builder.renderOutput(run, TableType.COMPACT, true);
     }
 
     public static class Builder {
@@ -44,7 +44,7 @@ public class JmhPrettyPrinter {
 
         public JmhPrettyPrinter build() {
             RenderTheme theme = renderTheme == null ? RenderTheme.DEFAULT : renderTheme;
-            return new JmhPrettyPrinter(new OutputBuilder(verbose, theme));
+            return new JmhPrettyPrinter(new ResultRenderer(verbose, theme));
         }
 
 
