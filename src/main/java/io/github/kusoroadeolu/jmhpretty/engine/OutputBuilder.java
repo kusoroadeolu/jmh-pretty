@@ -9,7 +9,6 @@ import io.github.kusoroadeolu.jmhpretty.engine.ColorEngine.Verdict;
 import io.github.kusoroadeolu.jmhpretty.model.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
@@ -226,16 +225,17 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
         headers.add(renderTheme.header().on("Score"));
         headers.add(renderTheme.header().on("Error"));
 
-        if (showPercentiles) {
-            List<String> percentileList;
-            if (verbose) percentileList = List.of("p00", "p50", "p90", "p95", "p99", "p99.9", "p99.99", "p99.999", "p99.9999", "max");
-            else percentileList = List.of("p99", "p99.9", "p99.99", "max");
+        if (showPercentiles) headers.addAll(applyHeader(createPercentileHeaders(verbose)));
 
-            List<String> colored = applyHeader(percentileList);
-            headers.addAll(colored);
-        }
         headers.add(renderTheme.header().on("Unit"));
         return headers;
+    }
+
+    static List<String> createPercentileHeaders(boolean verbose) {
+        List<String> percentileList;
+        if (verbose) percentileList = List.of("p00", "p50", "p90", "p95", "p99", "p99.9", "p99.99", "p99.999", "p99.9999", "max");
+        else percentileList = List.of("p99", "p99.9", "p99.99", "max");
+        return percentileList;
     }
 
     List<String> applyHeader(List<String> list) {

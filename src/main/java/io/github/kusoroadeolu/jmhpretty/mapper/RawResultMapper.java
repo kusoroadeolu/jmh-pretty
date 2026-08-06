@@ -9,6 +9,7 @@ import io.github.kusoroadeolu.jmhpretty.model.*;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Parses JMH's `-rf json` output into the lean internal model.
@@ -32,6 +33,9 @@ public final class RawResultMapper {
     private static final String SCORE_UNIT = "scoreUnit";
     private static final String SCORE_PERCENTILES = "scorePercentiles";
     private static final String SECONDARY_METRICS = "secondaryMetrics";
+    private static final String JFR = "jfr";
+    private static final String NaN = "NaN";
+    private static final Pattern DUMP_PATTERN = Pattern.compile("p\\d+\\.\\d+");
 
     private RawResultMapper() {}
 
@@ -104,7 +108,11 @@ public final class RawResultMapper {
 
     private static boolean isRedundantPercentileDump(String key) {
         if (key.contains(":p")) return true;
-        return key.matches("p\\d+\\.\\d+");
+        return DUMP_PATTERN.matcher(key).matches();
+    }
+
+    private static boolean isJfr(String key) {
+        return key.equalsIgnoreCase(JFR);
     }
 
     private static List<GroupRole> parseSecondaryMetrics(JsonObject secondaryObj) {
@@ -114,7 +122,7 @@ public final class RawResultMapper {
         List<GroupRole> roles = new ArrayList<>();
         for (Map.Entry<String, JsonElement> e : secondaryObj.entrySet()) {
             String roleName = e.getKey();
-            if (isRedundantPercentileDump(roleName)) continue;
+            if (isRedundantPercentileDump(roleName) || isJfr(roleName)) continue;
 
             JsonObject roleObj = e.getValue().getAsJsonObject();
             double score = requiredDouble(roleObj, SCORE);
@@ -165,7 +173,7 @@ public final class RawResultMapper {
         if (el == null || el.isJsonNull()) return null;
 
         String s = el.getAsString();
-        if ("NaN".equalsIgnoreCase(s)) return null;
+        if (NaN.equalsIgnoreCase(s)) return null;
 
         try {
             return el.getAsDouble();

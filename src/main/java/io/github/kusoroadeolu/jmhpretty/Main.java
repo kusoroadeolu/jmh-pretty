@@ -6,7 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 
-//TODO: Make the models more robust to handle '---' score units
 public class Main {
     public static void main(String[] args) {
         if (args.length == 0) {
