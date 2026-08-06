@@ -8,12 +8,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
 
+
 public final class FileUtils {
 
     public static Path toPath(String path) {
-        Path p = Path.of(path);
-        if (!p.isAbsolute()) p = Path.of(".", path).toAbsolutePath();
-        return p.normalize();
+        return Path.of(path).toAbsolutePath().normalize();
     }
 
     public static ParsedRun readJmhJson(String filePath) {

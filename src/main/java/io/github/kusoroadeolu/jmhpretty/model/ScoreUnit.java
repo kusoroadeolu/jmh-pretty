@@ -4,7 +4,10 @@ import java.util.Locale;
 
 public record ScoreUnit(Kind kind, String raw) {
 
-    public enum Kind {LATENCY, THROUGHPUT}
+    public enum Kind {
+        LATENCY,
+        THROUGHPUT
+    }
 
     public static ScoreUnit parse(String jmhUnit) {
         if (jmhUnit == null || jmhUnit.isBlank()) {

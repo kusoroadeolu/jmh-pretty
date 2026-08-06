@@ -18,21 +18,24 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
     private static final String AGGREGATE_ROLE_LABEL = "aggregate";
 
 
-    public String buildOutput(ParsedRun run, TableType tableType, boolean withFrame) {
+    public String buildOutput(ParsedRun run, TableType tableType, boolean appendFrame) {
         StringBuilder sb = new StringBuilder();
-        sb.append("%s = %s, %s = %s".formatted(renderTheme.best().on("green"),
+        sb.append(
+                "%s = %s, %s = %s".formatted(
+                renderTheme.best().on("green"),
                 renderTheme.legend().on("fastest/best"),
                 renderTheme.worst().on("red"),
                 renderTheme.legend().on("slowest/worst")
-        )).append(System.lineSeparator())
-                .append(System.lineSeparator()); // blank line before the table
+                )
+        ).append(System.lineSeparator())
+         .append(System.lineSeparator()); // blank line before the table
 
 
         for (BenchmarkGroup group : run.groups()) {
             Table table;
             if (isGroupBenchmark(group)) table = buildGroupBenchmark(group, tableType);
             else table = buildNormalGroup(group, tableType);
-            if (withFrame) sb.append(buildFrame(group.benchmarkName(), table));
+            if (appendFrame) sb.append(buildFrame(group.benchmarkName(), table));
             else sb.append(table.get());
             sb.append(System.lineSeparator());
         }
