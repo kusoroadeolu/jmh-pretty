@@ -9,6 +9,7 @@ import io.github.kusoroadeolu.jmhpretty.engine.ColorEngine.Verdict;
 import io.github.kusoroadeolu.jmhpretty.model.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
@@ -23,7 +24,8 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
                 renderTheme.legend().on("fastest/best"),
                 renderTheme.worst().on("red"),
                 renderTheme.legend().on("slowest/worst")
-        )).append(System.lineSeparator()) .append(System.lineSeparator()); // blank line before the table
+        )).append(System.lineSeparator())
+                .append(System.lineSeparator()); // blank line before the table
 
 
         for (BenchmarkGroup group : run.groups()) {
@@ -47,12 +49,25 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
     private Table buildNormalGroup(BenchmarkGroup group, TableType tableType) {
         List<BenchmarkVariantResult> variants = group.variants();
         Mode mode = variants.getFirst().mode();
+        boolean higherIsBetter = mode.higherIsBetter();
         boolean showPercentiles = mode.showsPercentiles();
 
         List<String> headers = initHeaders(group.paramKeys(), showPercentiles, false);
 
         // relative coloring pass over scores (mode-aware), only meaningful with >= 2 variants
-        List<Double> scores = variants.stream().map(BenchmarkVariantResult::score).toList();
+        List<Double> scores;
+
+        if (higherIsBetter) scores = variants.stream().map(BenchmarkVariantResult::score).toList();
+        else {
+            var combined = variants.stream()
+                    .map(BenchmarkVariantResult::percentiles)
+                    .map(ps -> verbose ? ps.toVerboseArray() : ps.toDefaultArray())
+                    .flatMapToDouble(Arrays::stream)
+                    .toArray();
+
+            scores = Arrays.stream(combined).boxed().toList();
+        }
+
         Result relative = ColorEngine.relativeVerdicts(scores, mode);
 
         Table table = Clique.table(tableType)
@@ -66,7 +81,7 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
                 row.add(v.params().getOrDefault(key, ""));
             }
 
-            Verdict scoreVerdict = relative.verdictFor(i);
+            Verdict scoreVerdict = higherIsBetter ? relative.verdictFor(i) : Verdict.NEUTRAL;
             row.add(formatCell(v.score(), scoreVerdict));
             row.add(v.error() == null ? N_A : dim("± ") + formatTo3dp(v.error()));
 
@@ -93,7 +108,7 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
         Table table = Clique.table(tableType)
                 .headers(headers);
 
-        Map<String, List<Double>> scoresByRole = groupScoresByRole(mode, group);
+        Map<String, List<Double>> scoresByRole = groupScoresByRole(mode, group, verbose);
 
         Map<String, Result> relativeResults = new HashMap<>();
         for (Map.Entry<String, List<Double>> entry : scoresByRole.entrySet()) {
@@ -143,7 +158,7 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
         return table;
     }
 
-    private Map<String, List<Double>> groupScoresByRole(Mode mode, BenchmarkGroup group) {
+    private static Map<String, List<Double>> groupScoresByRole(Mode mode, BenchmarkGroup group, boolean verbose) {
         Map<String, List<Double>> scoresByRole = new HashMap<>();
         if (mode.higherIsBetter()) {
             for (BenchmarkVariantResult variant: group.variants()) {

@@ -20,9 +20,9 @@ public final class FileUtils {
         try (Reader reader = new FileReader(filePath)) {
             return RawResultMapper.parse(reader);
         } catch (IOException e) {
-            throw new FailedParseException("Failed to read file: %s. Error: %s%n".formatted(filePath, e.getMessage()));
+            throw new ParseFailedException("Failed to read file: %s. Error: %s%n".formatted(filePath, e.getMessage()));
         } catch (IllegalArgumentException e) {
-            throw new FailedParseException("Failed to parse JMH JSON: " + e.getMessage());
+            throw new ParseFailedException("Failed to parse JMH JSON: " + e.getMessage());
         }
     }
 }

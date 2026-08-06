@@ -6,7 +6,7 @@
 
     <groupId>io.github.kusoroadeolu</groupId>
     <artifactId>jmh-pretty</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>io.github.kusoroadeolu</groupId>
             <artifactId>clique-core</artifactId>
-            <version>4.0.2</version>
+            <version>4.0.3</version>
         </dependency>
         <dependency>
             <groupId>io.github.kusoroadeolu</groupId>
