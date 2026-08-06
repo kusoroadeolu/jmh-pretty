@@ -91,7 +91,7 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
                 PercentileSet p = v.percentiles();
                 double[] array = verbose ? p.toVerboseArray() : p.toDefaultArray();
                  for (double value : array){
-                    Verdict verdict = relativeVerdict(value, v.scoreUnit(), relative, scores);
+                    Verdict verdict = verdict(value, relative, scores);
                     row.add(formatCell(value, verdict));
                 }
             }
@@ -134,11 +134,11 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
                 List<String> row = new ArrayList<>(paramCells);
                 row.add(role.name());
 
-                row.add(formatCell(role.score(), relativeVerdict(role.score(), role.scoreUnit(), relative, roleScores)));
+                row.add(formatCell(role.score(), verdict(role.score(), relative, roleScores)));
                 row.add(role.error() == null ? N_A : dim("± ") + formatTo3dp(role.error()));
 
                 if (showPercentiles)
-                    appendPercentileCells(row, role.percentiles(), role.scoreUnit(), relative, roleScores);
+                    appendPercentileCells(row, role.percentiles(), relative, roleScores);
 
                 row.add(role.scoreUnit().raw());
                 table.row(row);
@@ -186,9 +186,9 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
         return scoresByRole;
     }
 
-    private void appendPercentileCells(List<String> row, PercentileSet p, ScoreUnit unit ,Result result, List<Double> scores) {
+    private void appendPercentileCells(List<String> row, PercentileSet p ,Result result, List<Double> scores) {
         double[] array = verbose ? p.toVerboseArray() : p.toDefaultArray();
-        for (double pv : array) row.add(formatCell(pv, relativeVerdict(pv, unit, result, scores)));
+        for (double pv : array) row.add(formatCell(pv, verdict(pv, result, scores)));
     }
 
     // Same as appendPercentileCells but with no absolute-threshold coloring. Used for aggregate rows.
@@ -215,8 +215,8 @@ public record OutputBuilder(boolean verbose, RenderTheme renderTheme) {
         return ColorEngine.applyMarkup(formatTo3dp(rawValue), verdict, renderTheme);
     }
 
-    Verdict relativeVerdict(double rawValue, ScoreUnit unit, Result result, List<Double> scores) {
-        return ColorEngine.relativeVerdict(rawValue, unit, result, scores);
+    Verdict verdict(double rawValue, Result result, List<Double> scores) {
+        return ColorEngine.verdict(rawValue, result, scores);
     }
 
     List<String> initHeaders(List<String> paramKeys, boolean showPercentiles, boolean isGroup) {

@@ -2,7 +2,6 @@ package io.github.kusoroadeolu.jmhpretty.engine;
 
 import io.github.kusoroadeolu.jmhpretty.model.Mode;
 import io.github.kusoroadeolu.jmhpretty.model.RenderTheme;
-import io.github.kusoroadeolu.jmhpretty.model.ScoreUnit;
 
 import java.util.List;
 
@@ -14,7 +13,7 @@ public final class ColorEngine {
 
     private ColorEngine() {}
 
-    public enum Verdict { BEST, WORST, NEUTRAL, RELATIVE_BEST, RELATIVE_WORST }
+    public enum Verdict { BEST, WORST, NEUTRAL}
 
     public static Result relativeVerdicts(List<Double> scores, Mode mode) {
         if (scores.size() < 2) return Result.NONE;
@@ -56,14 +55,12 @@ public final class ColorEngine {
         return switch (verdict) {
             case BEST -> renderTheme.best().on(cellText);
             case WORST -> renderTheme.worst().on(cellText);
-            case RELATIVE_WORST -> renderTheme.relativeWorst().on(cellText);
-            case RELATIVE_BEST -> renderTheme.relativeBest().on(cellText);
             case NEUTRAL -> cellText;
         };
     }
 
 
-    public static Verdict relativeVerdict(double rawValue, ScoreUnit unit, Result result, List<Double> scores) {
+    public static Verdict verdict(double rawValue, Result result, List<Double> scores) {
         if (rawValue <= 0 || result.isNone()) return Verdict.NEUTRAL;
 
         double bestScore = scores.get(result.bestIndex());
@@ -72,38 +69,7 @@ public final class ColorEngine {
         if (rawValue == bestScore) return Verdict.BEST;
         if (rawValue == worstScore) return Verdict.WORST;
 
-
-        boolean higherIsBetter = unit.kind() == ScoreUnit.Kind.THROUGHPUT;
-
-        //Normalize direction
-        double bestRange = higherIsBetter
-                ? bestScore - (bestScore * BEST_TOLERANCE_RATIO)
-                : bestScore + (bestScore * BEST_TOLERANCE_RATIO);
-
-        double worstRange = higherIsBetter
-                ? worstScore + (worstScore * WORST_TOLERANCE_RATIO)
-                : worstScore - (worstScore * WORST_TOLERANCE_RATIO);
-
-        // Guard against the tolerance bands crossing when best/worst are close together.
-        double mid = (bestScore + worstScore) / 2;
-
-       // System.out.println("Raw value: %s, Best Range: %s, Worst Range: %s".formatted(rawValue, bestScore, worstScore));
-
-        boolean crossed = higherIsBetter
-                ? bestRange < worstRange
-                : bestRange > worstRange;
-
-        if (crossed) {
-            bestRange = mid;
-            worstRange = mid;
-        }
-
-        boolean inBestZone = higherIsBetter ? rawValue >= bestRange : rawValue <= bestRange;
-        boolean inWorstZone = higherIsBetter ? rawValue <= worstRange : rawValue >= worstRange;
-
-        if (inBestZone) return Verdict.RELATIVE_BEST;
-        else if (inWorstZone) return Verdict.RELATIVE_WORST;
-        else return Verdict.NEUTRAL;
+        return Verdict.NEUTRAL;
     }
 
 

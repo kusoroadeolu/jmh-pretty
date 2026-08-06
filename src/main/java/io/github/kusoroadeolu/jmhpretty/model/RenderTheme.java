@@ -4,8 +4,7 @@ import io.github.kusoroadeolu.clique.Clique;
 import io.github.kusoroadeolu.clique.style.Ink;
 
 public record RenderTheme(
-        Ink best, Ink worst, Ink relativeBest,
-        Ink relativeWorst, Ink header, Ink title,
+        Ink best, Ink worst, Ink header, Ink title,
         Ink aggregate, Ink legend
 ) {
     private static final Ink BASE = new Ink();
@@ -24,8 +23,6 @@ public record RenderTheme(
                 base,
                 base,
                 base,
-                base,
-                base,
                 base
         );
     }
@@ -39,8 +36,6 @@ public record RenderTheme(
         return new RenderTheme(
                 bold.of("nord_green"),
                 bold.of("nord_red"),
-                base,
-                base,
                 bold.of("nord_frost1"),
                 bold.of("nord_snow"),
                 base.of("nord_polar3").italic(),

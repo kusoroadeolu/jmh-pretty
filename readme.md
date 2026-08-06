@@ -5,7 +5,7 @@ A CLI tool that turns raw [JMH](https://openjdk.org/projects/code-tools/jmh/) `-
 ## Features
 
 - Renders normal benchmarks and `@Group` benchmarks with different, purpose-built layouts.
-- Relative color-coding per benchmark group: best result, worst result, and "close to best / close to worst" shades, computed independently for each param combination.
+- Relative color-coding per benchmark group: best result and worst result computed independently for each param combination.
 - Mode-aware: percentile columns (`p99`, `p99.9`, `p99.99`, `max`) are only shown for `SAMPLE` / `ALL` modes, since they're meaningless for `THRPT`, `AVGT`, and `SS`.
 - `--verbose` mode expands percentiles to the full set: `p00, p50, p90, p95, p99, p99.9, p99.99, p99.999, p99.9999, max`.
 - For `@Group` benchmarks, each role gets its own row (colored relative to other variants of that same role), followed by a dimmed/italicized aggregate row summing the group.
@@ -67,13 +67,11 @@ A legend line above the tables shows what the "best" and "worst" colors mean (fa
 
 For any benchmark with 2+ variants, `jmhpretty` computes a best/worst index per group of scores (scoped per `@Group` role where applicable):
 
-| Verdict | Meaning |
-|---|---|
-| **Best** | The single best score in its comparison set |
-| **Worst** | The single worst score in its comparison set |
-| **Relative best** | Within a tolerance band of the best score |
-| **Relative worst** | Within a tolerance band of the worst score |
-| Neutral | Everything else (unstyled) |
+| Verdict | Meaning                                       |
+|---|-----------------------------------------------|
+| **Best** | The best scores in its comparison set         |
+| **Worst** | The single worst scores in its comparison set |
+| Neutral | Everything else (unstyled)                    |
 
 Direction (higher-is-better vs. lower-is-better) is derived from the score unit (`ops/*` = throughput = higher is better; `*/op` = latency = lower is better), so mixed-mode comparisons stay correct.
 
